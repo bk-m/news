@@ -18,8 +18,11 @@ IDs:
     - wired-de
 """
 
+import util.news_logger
+import logging
 import requests
 
+LOGGER = logging.getLogger('news')
 
 class IllegalArgumentError(ValueError):
     pass
@@ -32,24 +35,39 @@ class News():
     def __init__(self, source=None, sort='latest'):
         if not source:
             raise IllegalArgumentError('Must pass a source')
-        tmp = requests.get('https://newsapi.org/v1/sources').json()
 
+        avail_sorts = self._get_available_sorts()
+        if sort not in avail_sorts[source]:
+            LOGGER.debug('Chosen sorting not available')
+            if len(avail_sorts[source]) > 0:
+                sort = avail_sorts[source][0]
+                LOGGER.debug('Setting sort to {}'.format(sort))
+            else:
+                sort = None
+                LOGGER.debug('No sorting option found. Setting sort to None.')
         self.payload = {'source': source, 'sortBy': sort, 'apiKey': News._api_key}
 
     def get_news(self):
-        response = requests.get(News._base_url, params=self.payload).json()
-        if response['status'] == 'error' and response['code'] == 'sourceUnavailableSortedBy':
-            del self.payload['sortBy']
-            response = requests.get(News._base_url, params=self.payload)
-        return response
+        return requests.get(News._base_url, params=self.payload).json()
+
+    def _get_available_sorts(self):
+        response = requests.get('https://newsapi.org/v1/sources').json()
+        ret_val = {}
+        if response['status'] == 'ok':
+            ret_val = {source['id']: source['sortBysAvailable'] for source in response['sources']}
+        else:
+            LOGGER.error("Server error. Coudn't get available sorts.")
+        return ret_val
+
+
 
 def main():
     ids = ['hacker-news', 'spiegel-online']
     tmp = [News(val).get_news() for val in ids]
 
     for resp in tmp:
-        print('Source: {}'.format(resp.json()['source']))
-        for article in resp.json()['articles']:
+        print('Source: {}'.format(resp['source']))
+        for article in resp['articles']:
             print(article['title'])
         print('-------------------------------------------------------------------------')
 
