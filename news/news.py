@@ -5,7 +5,6 @@ Main module.
 
 Powered by NewsAPI.org
 
-Key: 175b17969f3141fbb2af57b2b61e669e
 IDs:
     - ars-technica
     - der-tagesspiegel
@@ -30,7 +29,7 @@ class IllegalArgumentError(ValueError):
 
 class News():
     _base_url = 'https://newsapi.org/v1/articles'
-    _api_key = '175b17969f3141fbb2af57b2b61e669e'
+    _api_key = ''
 
     def __init__(self, source=None, sort='latest'):
         if not source:
